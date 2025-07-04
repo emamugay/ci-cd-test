@@ -33,15 +33,15 @@ jobs:
         context: .
         push: true
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:staging
-          ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:${{ github.sha }}
+          magscy/my-cicd-app:staging
+          magscy/my-cicd-app:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
     - name: Deploy to staging
       run: |
         echo "Deploying to staging environment..."
-        echo "Docker image: ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:staging"
+        echo "Docker image: magscy/my-cicd-app:staging"
         
         # Simulate deployment steps
         echo "1. Pulling latest image..."
@@ -80,15 +80,15 @@ jobs:
     
     - name: Tag and push production image
       run: |
-        docker pull ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:${{ github.sha }}
-        docker tag ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:${{ github.sha }} \
-                   ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:latest
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:latest
+        docker pull magscy/my-cicd-app:${{ github.sha }}
+        docker tag magscy/my-cicd-app:${{ github.sha }} \
+                   magscy/my-cicd-app:latest
+        docker push magscy/my-cicd-app:latest
     
     - name: Deploy to production
       run: |
         echo "Deploying to production environment..."
-        echo "Docker image: ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:latest"
+        echo "Docker image: magscy/my-cicd-app:latest"
         
         # Simulate production deployment
         echo "1. Creating backup of current deployment..."
