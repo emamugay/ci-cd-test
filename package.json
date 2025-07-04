@@ -1,0 +1,49 @@
+{
+  "name": "101-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "prettify": "prettier -l --write \"**/*.js\"",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "dev": "nodemon -L src/index.js",
+    "start": "node src/index.js",
+    "build": "echo 'No build step required for Node.js app'",
+    "lint": "prettier --check \"**/*.js\"",
+    "lint:fix": "prettier --write \"**/*.js\"",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:check": "npx depcheck && npx npm-check-updates",
+    "docker:build": "docker build -t getting-started-app .",
+    "docker:run": "docker run -p 3000:3000 getting-started-app",
+    "docker:test": "docker build -t getting-started-app:test . && docker run -p 3001:3000 getting-started-app:test",
+    "ci:local": "chmod +x scripts/local-ci-cd-test.sh && ./scripts/local-ci-cd-test.sh",
+    "health": "curl -f http://localhost:3000/health || echo 'Health check failed'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^2.3.3",
+    "sqlite3": "^5.1.2",
+    "uuid": "^9.0.0",
+    "wait-port": "^1.0.4"
+  },
+  "resolutions": {
+    "ansi-regex": "5.0.1"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": true,
+    "singleQuote": true
+  },
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "nodemon": "^2.0.20",
+    "prettier": "^2.7.1"
+  }
+}

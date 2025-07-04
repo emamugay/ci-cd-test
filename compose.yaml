@@ -1,0 +1,110 @@
+# Docker Compose Multi-Database Setup
+# 
+# Current: MySQL (active)
+# Alternatives: PostgreSQL, MongoDB (commented out)
+#
+# To switch databases:
+# 1. Comment out current database service
+# 2. Uncomment desired database service and volume
+# 3. Update app environment variables accordingly:
+#    - PostgreSQL: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+#    - MongoDB: MONGODB_HOST, MONGODB_USER, MONGODB_PASSWORD, MONGODB_DB
+# 4. Update app dependencies in package.json (pg for PostgreSQL, mongodb for MongoDB)
+# 5. Run: docker compose down && docker compose up -d
+#
+# Original docker run command for reference:
+# docker run -dp 127.0.0.1:3000:3000 \
+#   -w /app -v "$(pwd):/app" \
+#   --network todo-app \
+#   -e MYSQL_HOST=mysql \
+#   -e MYSQL_USER=root \
+#   -e MYSQL_PASSWORD=secret \
+#   -e MYSQL_DB=todos \
+#   node:18-alpine \
+#   sh -c "yarn install && yarn run dev"
+
+services:
+  app:
+    image: node:18-alpine
+    command: sh -c "yarn install && yarn run dev"
+    ports:
+      - 127.0.0.1:3000:3000
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: todos
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+# MySQL container (ACTIVE)
+# docker run -d \
+#   --network todo-app --network-alias mysql \
+#   -v todo-mysql-data:/var/lib/mysql \
+#   -e MYSQL_ROOT_PASSWORD=secret \
+#   -e MYSQL_DATABASE=todos \
+#   mysql:8.0                  
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - todo-mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: todos
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Alternative Database Options:
+  
+  # PostgreSQL container (ALTERNATIVE)
+  # Uncomment and update app environment variables to use PostgreSQL:
+  # postgres:
+  #   image: postgres:15
+  #   volumes:
+  #     - todo-postgres-data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_PASSWORD: secret
+  #     POSTGRES_DB: todos
+  #     POSTGRES_USER: root
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U root -d todos"]
+  #     timeout: 20s
+  #     retries: 10
+  #   ports:
+  #     - "5432:5432"
+  
+  # MongoDB container (ALTERNATIVE)
+  # Uncomment and update app environment variables to use MongoDB:
+  # mongodb:
+  #   image: mongo:7.0
+  #   volumes:
+  #     - todo-mongodb-data:/data/db
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: secret
+  #     MONGO_INITDB_DATABASE: todos
+  #   healthcheck:
+  #     test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+  #     timeout: 20s
+  #     retries: 10
+  #   ports:
+  #     - "27017:27017"
+
+volumes:
+  todo-mysql-data:
+  # Alternative database volumes (uncomment when using):
+  # todo-postgres-data:
+  # todo-mongodb-data:
+
+# remove previous containers:
+# docker rm -f $(docker ps -aq)
+# docker compose down --volumes
+# docker volume rm todo-mysql-data
+
+# run docker compose up -d

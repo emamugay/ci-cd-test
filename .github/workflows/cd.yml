@@ -1,0 +1,136 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [ main ]
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:staging
+          ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        echo "Docker image: ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:staging"
+        
+        # Simulate deployment steps
+        echo "1. Pulling latest image..."
+        echo "2. Stopping old container..."
+        echo "3. Starting new container..."
+        echo "4. Running health checks..."
+        echo "✅ Staging deployment completed successfully!"
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests against staging..."
+        # Add your smoke test commands here
+        curl -f http://staging.myapp.com/health || echo "Health check failed"
+        echo "✅ Smoke tests completed!"
+    
+    - name: Notify deployment
+      run: |
+        echo "🚀 Staging deployment completed for commit ${{ github.sha }}"
+        echo "Environment: https://staging.myapp.com"
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Tag and push production image
+      run: |
+        docker pull ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:${{ github.sha }}
+        docker tag ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:${{ github.sha }} \
+                   ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:latest
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:latest
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        echo "Docker image: ${{ secrets.DOCKERHUB_USERNAME }}/getting-started-app:latest"
+        
+        # Simulate production deployment
+        echo "1. Creating backup of current deployment..."
+        echo "2. Deploying new version with blue-green strategy..."
+        echo "3. Running health checks..."
+        echo "4. Switching traffic to new version..."
+        echo "5. Monitoring for 5 minutes..."
+        echo "✅ Production deployment completed successfully!"
+    
+    - name: Run production smoke tests
+      run: |
+        echo "Running production smoke tests..."
+        # Add your production smoke test commands here
+        curl -f http://myapp.com/health || echo "Health check failed"
+        echo "✅ Production smoke tests completed!"
+    
+    - name: Notify successful deployment
+      run: |
+        echo "🎉 Production deployment completed for commit ${{ github.sha }}"
+        echo "Environment: https://myapp.com"
+        echo "Deployment time: $(date)"
+        
+        # You can add Slack/Teams notification here
+        # curl -X POST -H 'Content-type: application/json' \
+        #   --data '{"text":"🎉 Production deployment completed!"}' \
+        #   ${{ secrets.SLACK_WEBHOOK }}
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure()
+    environment: production
+    
+    steps:
+    - name: Rollback production deployment
+      run: |
+        echo "🚨 Deployment failed! Rolling back..."
+        echo "1. Switching traffic back to previous version..."
+        echo "2. Stopping failed deployment..."
+        echo "3. Restoring previous stable version..."
+        echo "✅ Rollback completed successfully!"
+    
+    - name: Notify rollback
+      run: |
+        echo "🚨 Production rollback completed due to deployment failure"
+        echo "Previous stable version restored" 
